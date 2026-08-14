@@ -17,7 +17,6 @@ export const NotificationProvider = ({ children }) => {
     const newToast = { ...notification, toastId };
     setToasts((prev) => [newToast, ...prev].slice(0, 5));
 
-    // Auto dismiss after 6 seconds
     setTimeout(() => {
       removeToast(toastId);
     }, 6000);
@@ -32,13 +31,13 @@ export const NotificationProvider = ({ children }) => {
     try {
       const endpoint = isOwner ? '/owner/notifications' : '/notifications';
       const res = await API.get(endpoint);
-      if (res.data.success) {
-        const list = res.data.data;
+      if (res.data && res.data.success) {
+        const list = res.data.data || [];
         setNotifications(list);
         setUnreadCount(list.filter((n) => !n.read).length);
       }
     } catch (err) {
-      console.error('Failed to fetch notification history:', err);
+      console.warn('Failed to fetch notification history:', err?.message);
     }
   };
 
@@ -51,52 +50,72 @@ export const NotificationProvider = ({ children }) => {
 
     fetchNotifications();
 
-    // Setup STOMP WebSocket connection
-    const client = new Client({
-      webSocketFactory: () => new SockJS('/ws-notifications'),
-      reconnectDelay: 5000,
-      heartbeatIncoming: 4000,
-      heartbeatOutgoing: 4000,
-      onConnect: () => {
-        console.log('Connected to Venkatesha WebSocket Notification Broker');
+    let client = null;
+    try {
+      client = new Client({
+        webSocketFactory: () => new SockJS('/ws-notifications'),
+        reconnectDelay: 5000,
+        heartbeatIncoming: 4000,
+        heartbeatOutgoing: 4000,
+        onConnect: () => {
+          console.log('Connected to Venkatesha WebSocket Notification Broker');
 
-        // Subscribe to public channel for customer notifications (e.g. new product, price change)
-        client.subscribe('/topic/notifications/public', (message) => {
-          const payload = JSON.parse(message.body);
-          setNotifications((prev) => [payload, ...prev]);
-          setUnreadCount((prev) => prev + 1);
-          addToast(payload);
-        });
-
-        // If Owner, subscribe to owner notification channel
-        if (isOwner) {
-          client.subscribe('/topic/notifications/owner', (message) => {
-            const payload = JSON.parse(message.body);
-            setNotifications((prev) => [payload, ...prev]);
-            setUnreadCount((prev) => prev + 1);
-            addToast({ ...payload, isOwner: true });
+          client.subscribe('/topic/notifications/public', (message) => {
+            try {
+              const payload = JSON.parse(message.body);
+              setNotifications((prev) => [payload, ...prev]);
+              setUnreadCount((prev) => prev + 1);
+              addToast(payload);
+            } catch (e) {
+              console.error(e);
+            }
           });
-        }
 
-        // If Customer, subscribe to personal customer topic
-        if (user && !isOwner) {
-          client.subscribe(`/topic/notifications/customer/${user.id}`, (message) => {
-            const payload = JSON.parse(message.body);
-            setNotifications((prev) => [payload, ...prev]);
-            setUnreadCount((prev) => prev + 1);
-            addToast(payload);
-          });
-        }
-      },
-      onStompError: (frame) => {
-        console.error('Broker error:', frame.headers['message'], frame.body);
-      },
-    });
+          if (isOwner) {
+            client.subscribe('/topic/notifications/owner', (message) => {
+              try {
+                const payload = JSON.parse(message.body);
+                setNotifications((prev) => [payload, ...prev]);
+                setUnreadCount((prev) => prev + 1);
+                addToast({ ...payload, isOwner: true });
+              } catch (e) {
+                console.error(e);
+              }
+            });
+          }
 
-    client.activate();
+          if (user && !isOwner) {
+            client.subscribe(`/topic/notifications/customer/${user.id}`, (message) => {
+              try {
+                const payload = JSON.parse(message.body);
+                setNotifications((prev) => [payload, ...prev]);
+                setUnreadCount((prev) => prev + 1);
+                addToast(payload);
+              } catch (e) {
+                console.error(e);
+              }
+            });
+          }
+        },
+        onStompError: (frame) => {
+          console.warn('STOMP Broker notice:', frame?.headers?.['message']);
+        },
+        onWebSocketError: (event) => {
+          console.warn('WebSocket connection notice:', event);
+        }
+      });
+
+      client.activate();
+    } catch (e) {
+      console.warn('Could not initialize WebSocket client:', e);
+    }
 
     return () => {
-      client.deactivate();
+      if (client) {
+        try {
+          client.deactivate();
+        } catch (e) {}
+      }
     };
   }, [user, isOwner]);
 
