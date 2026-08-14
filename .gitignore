@@ -1,0 +1,18 @@
+# Git ignore rules for Venkatesha Organic Products
+
+# Backend
+backend/target/
+backend/.flattened-pom.xml
+backend/*.log
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE & System
+.idea/
+.vscode/
+*.iml
+.DS_Store
+*.tmp
