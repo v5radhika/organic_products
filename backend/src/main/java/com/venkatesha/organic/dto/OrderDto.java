@@ -21,6 +21,9 @@ public class OrderDto {
     private OrderStatus status;
     private String shippingAddress;
     private String contactPhone;
+    private String paymentMethod;
+    private String paymentStatus;
+    private String transactionId;
     @Builder.Default
     private List<OrderItemDto> items = new ArrayList<>();
     private LocalDateTime createdAt;

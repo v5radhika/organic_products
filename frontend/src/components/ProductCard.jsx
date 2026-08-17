@@ -1,87 +1,160 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, Check, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import API from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 
-const ProductCard = ({ product, onCartUpdated }) => {
-  const { isCustomer } = useAuth();
+const AddProduct = () => {
   const navigate = useNavigate();
+  const { isOwner } = useAuth(); // make sure you have this in AuthContext
 
-  const handleAddToCart = async (e) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    price: '',
+    stockQuantity: '',
+    categoryId: '',
+    organic: true,
+  });
+
+  const [imageUrl, setImageUrl] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // Convert selected gallery photo → Base64 URL
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImageUrl(reader.result); // This becomes product.imageUrl
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!isCustomer) {
-      navigate('/login');
+    if (!imageUrl) {
+      alert('Please select a product image');
       return;
     }
+
+    setLoading(true);
     try {
-      await API.post('/cart', { productId: product.id, quantity: 1 });
-      if (onCartUpdated) onCartUpdated();
-      alert(`Added "${product.name}" to your cart!`);
+      const productData = {
+        ...formData,
+        price: Number(formData.price),
+        stockQuantity: Number(formData.stockQuantity),
+        imageUrl: imageUrl, // ← Important
+      };
+
+      await API.post('/products', productData); // change endpoint if needed
+      alert('Product added successfully!');
+      navigate('/owner/products'); // or wherever you want
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to add item to cart');
+      alert(err.response?.data?.message || 'Failed to add product');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const isLowStock = product.stockQuantity > 0 && product.stockQuantity <= 5;
-  const isOutOfStock = product.stockQuantity === 0;
+  if (!isOwner) {
+    return <div>Only Owner can add products</div>;
+  }
 
   return (
-    <div className="card flex flex-col justify-between" style={{ height: '100%' }}>
-      <div style={{ position: 'relative', overflow: 'hidden', height: '220px', background: '#f8fafc' }}>
-        <img
-          src={product.imageUrl || 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80'}
-          alt={product.name}
-          style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.4s ease' }}
-        />
-        <div style={{ position: 'absolute', top: '12px', left: '12px', display: 'flex', gap: '6px' }}>
-          {product.organic && <span className="badge badge-organic">100% Organic</span>}
-        </div>
-      </div>
+    <div style={{ maxWidth: '600px', margin: '2rem auto', padding: '1.5rem' }}>
+      <h2 style={{ marginBottom: '1.5rem' }}>Add New Product</h2>
 
-      <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        <div>
-          <div style={{ fontSize: '0.75rem', fontWeight: '700', color: '#15803d', textTransform: 'uppercase', marginBottom: '4px' }}>
-            {product.category?.name || 'Organic Farm'}
-          </div>
-          <Link to={`/products/${product.id}`} style={{ textDecoration: 'none' }}>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: '700', color: '#0f172a', marginBottom: '8px', lineHeight: '1.3' }}>
-              {product.name}
-            </h3>
-          </Link>
-          <p style={{ fontSize: '0.85rem', color: '#64748b', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', marginBottom: '14px' }}>
-            {product.description}
-          </p>
+      <form onSubmit={handleSubmit}>
+        {/* Image Upload */}
+        <div style={{ marginBottom: '1.2rem' }}>
+          <label>Product Photo (from Gallery)</label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={handleImageChange}
+            required
+          />
+          {imageUrl && (
+            <img
+              src={imageUrl}
+              alt="Preview"
+              style={{ width: '180px', marginTop: '10px', borderRadius: '8px' }}
+            />
+          )}
         </div>
 
-        <div>
-          <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
-            <div>
-              <span style={{ fontSize: '1.35rem', fontWeight: '800', color: '#064e3b' }}>₹{product.price}</span>
-            </div>
-            <div>
-              {isOutOfStock ? (
-                <span className="badge badge-cancelled">Out of Stock</span>
-              ) : isLowStock ? (
-                <span className="badge badge-pending">Only {product.stockQuantity} left</span>
-              ) : (
-                <span className="badge badge-delivered">{product.stockQuantity} Available</span>
-              )}
-            </div>
-          </div>
-
-          <button
-            onClick={handleAddToCart}
-            disabled={isOutOfStock}
-            className="btn btn-primary"
-            style={{ width: '100%', opacity: isOutOfStock ? 0.6 : 1 }}
-          >
-            <ShoppingBag size={18} /> {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
-          </button>
+        {/* Other Fields */}
+        <div style={{ marginBottom: '1rem' }}>
+          <label>Product Name</label>
+          <input
+            type="text"
+            name="name"
+            value={formData.name}
+            onChange={handleChange}
+            required
+          />
         </div>
-      </div>
+
+        <div style={{ marginBottom: '1rem' }}>
+          <label>Description</label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows="3"
+            required
+          />
+        </div>
+
+        <div style={{ marginBottom: '1rem' }}>
+          <label>Price (₹)</label>
+          <input
+            type="number"
+            name="price"
+            value={formData.price}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div style={{ marginBottom: '1rem' }}>
+          <label>Stock Quantity</label>
+          <input
+            type="number"
+            name="stockQuantity"
+            value={formData.stockQuantity}
+            onChange={handleChange}
+            required
+          />
+        </div>
+
+        <div style={{ marginBottom: '1rem' }}>
+          <label>
+            <input
+              type="checkbox"
+              name="organic"
+              checked={formData.organic}
+              onChange={handleChange}
+            />
+            {' '}100% Organic
+          </label>
+        </div>
+
+        <button type="submit" disabled={loading} className="btn btn-primary">
+          {loading ? 'Adding...' : 'Add Product'}
+        </button>
+      </form>
     </div>
   );
 };
 
-export default ProductCard;
+export default AddProduct;

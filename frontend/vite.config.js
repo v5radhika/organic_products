@@ -8,6 +8,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
+    allowedHosts: true,   // ← Added this line (allows Cloudflare tunnel)
     proxy: {
       '/api': {
         target: 'http://localhost:8080',

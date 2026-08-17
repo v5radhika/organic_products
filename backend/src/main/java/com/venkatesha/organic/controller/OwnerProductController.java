@@ -1,6 +1,7 @@
 package com.venkatesha.organic.controller;
 
 import com.venkatesha.organic.dto.*;
+import com.venkatesha.organic.entity.Product;
 import com.venkatesha.organic.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -53,6 +54,7 @@ public class OwnerProductController {
         productService.deleteOrDeactivateProduct(id);
         return ResponseEntity.ok(ApiResponse.success("Product deactivated successfully", null));
     }
+
 
     @PatchMapping("/{id}/stock")
     @Operation(summary = "Update product stock quantity")

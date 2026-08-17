@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../api/axios';
-import { Plus, Edit, Trash2, Package, RefreshCw, X, Tag } from 'lucide-react';
+import { Plus, Edit, Trash2, X } from 'lucide-react';
 
 const ProductManagement = () => {
   const [products, setProducts] = useState([]);
@@ -66,7 +66,7 @@ const ProductManagement = () => {
       price: product.price,
       stockQuantity: product.stockQuantity,
       categoryId: product.category?.id || '',
-      imageUrl: product.imageUrl,
+      imageUrl: product.imageUrl || '',
       organic: product.organic,
       active: product.active,
     });
@@ -85,10 +85,10 @@ const ProductManagement = () => {
 
       if (editingProduct) {
         await API.put(`/owner/products/${editingProduct.id}`, payload);
-        alert('Product updated successfully! Real-time price/stock notifications triggered if modified.');
+        alert('Product updated successfully!');
       } else {
         await API.post('/owner/products', payload);
-        alert('New organic product added successfully! Real-time WebSocket notification broadcast to all customers.');
+        alert('New organic product added successfully!');
       }
 
       setIsModalOpen(false);
@@ -98,6 +98,7 @@ const ProductManagement = () => {
     }
   };
 
+  // Deactivate product
   const handleDeactivate = async (id) => {
     if (!window.confirm('Are you sure you want to deactivate this product?')) return;
     try {
@@ -109,13 +110,28 @@ const ProductManagement = () => {
     }
   };
 
+  // Activate product
+  const handleActivate = async (id) => {
+    try {
+      await API.put(`/owner/products/${id}`, { active: true });
+      alert('Product activated successfully!');
+      fetchProducts();
+    } catch (err) {
+      alert('Failed to activate product');
+    }
+  };
+
   const handlePatchSubmit = async (e) => {
     e.preventDefault();
     try {
       if (patchModal.type === 'stock') {
-        await API.patch(`/owner/products/${patchModal.productId}/stock`, { stockQuantity: parseInt(patchModal.value, 10) });
+        await API.patch(`/owner/products/${patchModal.productId}/stock`, {
+          stockQuantity: parseInt(patchModal.value, 10),
+        });
       } else if (patchModal.type === 'price') {
-        await API.patch(`/owner/products/${patchModal.productId}/price`, { price: parseFloat(patchModal.value) });
+        await API.patch(`/owner/products/${patchModal.productId}/price`, {
+          price: parseFloat(patchModal.value),
+        });
       }
       setPatchModal({ open: false, type: '', productId: null, value: '' });
       fetchProducts();
@@ -124,14 +140,22 @@ const ProductManagement = () => {
     }
   };
 
-  if (loading) return <div className="container" style={{ padding: '4rem', textAlign: 'center' }}>Loading products inventory...</div>;
+  if (loading) {
+    return (
+      <div className="container" style={{ padding: '4rem', textAlign: 'center' }}>
+        Loading products inventory...
+      </div>
+    );
+  }
 
   return (
     <div className="container" style={{ paddingTop: '2.5rem', paddingBottom: '4rem' }}>
       <div className="flex items-center justify-between" style={{ marginBottom: '2rem' }}>
         <div>
           <h1 style={{ fontSize: '2.2rem', fontWeight: '800' }}>Organic Product Inventory Management</h1>
-          <p style={{ color: '#64748b' }}>Add, update price, manage stock, and upload images for your products</p>
+          <p style={{ color: '#64748b' }}>
+            Add, update price, manage stock, and upload images for your products
+          </p>
         </div>
         <button onClick={handleOpenAddModal} className="btn btn-primary flex items-center gap-2">
           <Plus size={18} /> Add New Product
@@ -153,62 +177,118 @@ const ProductManagement = () => {
             </tr>
           </thead>
           <tbody>
-            {products.map((p) => (
-              <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                <td style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <img src={p.imageUrl} alt={p.name} style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }} />
-                  <div>
-                    <div style={{ fontWeight: '700', color: '#0f172a' }}>{p.name}</div>
-                    <div style={{ fontSize: '0.78rem', color: '#64748b' }}>ID: #{p.id}</div>
-                  </div>
-                </td>
-                <td style={{ padding: '12px 16px', fontWeight: '600', color: '#334155' }}>
-                  {p.category?.name || 'General'}
-                </td>
-                <td style={{ padding: '12px 16px' }}>
-                  <div className="flex items-center gap-2">
-                    <span style={{ fontWeight: '800', color: '#064e3b' }}>₹{p.price}</span>
-                    <button
-                      onClick={() => setPatchModal({ open: true, type: 'price', productId: p.id, value: p.price })}
-                      style={{ background: '#f1f5f9', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer' }}
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </td>
-                <td style={{ padding: '12px 16px' }}>
-                  <div className="flex items-center gap-2">
-                    <span className={`badge ${p.stockQuantity <= 5 ? 'badge-pending' : 'badge-delivered'}`}>
-                      {p.stockQuantity} units
-                    </span>
-                    <button
-                      onClick={() => setPatchModal({ open: true, type: 'stock', productId: p.id, value: p.stockQuantity })}
-                      style={{ background: '#f1f5f9', border: 'none', padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', cursor: 'pointer' }}
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </td>
-                <td style={{ padding: '12px 16px' }}>
-                  {p.organic ? <span className="badge badge-organic">YES</span> : 'No'}
-                </td>
-                <td style={{ padding: '12px 16px' }}>
-                  {p.active ? <span className="badge badge-delivered">ACTIVE</span> : <span className="badge badge-cancelled">INACTIVE</span>}
-                </td>
-                <td style={{ padding: '12px 16px', textAlign: 'right' }}>
-                  <div className="flex items-center justify-end gap-2">
-                    <button onClick={() => handleOpenEditModal(p)} className="btn btn-secondary btn-sm" style={{ padding: '4px 8px' }}>
-                      <Edit size={14} /> Edit
-                    </button>
-                    {p.active && (
-                      <button onClick={() => handleDeactivate(p.id)} className="btn btn-danger btn-sm" style={{ padding: '4px 8px' }}>
-                        <Trash2 size={14} /> Deactivate
-                      </button>
-                    )}
-                  </div>
+            {products.length === 0 ? (
+              <tr>
+                <td colSpan="7" style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>
+                  No products found
                 </td>
               </tr>
-            ))}
+            ) : (
+              products.map((p) => (
+                <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <img
+                      src={p.imageUrl || 'https://via.placeholder.com/48'}
+                      alt={p.name}
+                      style={{ width: '48px', height: '48px', borderRadius: '8px', objectFit: 'cover' }}
+                    />
+                    <div>
+                      <div style={{ fontWeight: '700', color: '#0f172a' }}>{p.name}</div>
+                      <div style={{ fontSize: '0.78rem', color: '#64748b' }}>ID: #{p.id}</div>
+                    </div>
+                  </td>
+                  <td style={{ padding: '12px 16px', fontWeight: '600', color: '#334155' }}>
+                    {p.category?.name || 'General'}
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <div className="flex items-center gap-2">
+                      <span style={{ fontWeight: '800', color: '#064e3b' }}>₹{p.price}</span>
+                      <button
+                        onClick={() =>
+                          setPatchModal({ open: true, type: 'price', productId: p.id, value: p.price })
+                        }
+                        style={{
+                          background: '#f1f5f9',
+                          border: 'none',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '0.7rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
+                    <div className="flex items-center gap-2">
+                      <span className={`badge ${p.stockQuantity <= 5 ? 'badge-pending' : 'badge-delivered'}`}>
+                        {p.stockQuantity} units
+                      </span>
+                      <button
+                        onClick={() =>
+                          setPatchModal({
+                            open: true,
+                            type: 'stock',
+                            productId: p.id,
+                            value: p.stockQuantity,
+                          })
+                        }
+                        style={{
+                          background: '#f1f5f9',
+                          border: 'none',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '0.7rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
+                    {p.organic ? <span className="badge badge-organic">YES</span> : 'No'}
+                  </td>
+                  <td style={{ padding: '12px 16px' }}>
+                    {p.active ? (
+                      <span className="badge badge-delivered">ACTIVE</span>
+                    ) : (
+                      <span className="badge badge-cancelled">INACTIVE</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                    <div className="flex items-center justify-end gap-2">
+                      <button
+                        onClick={() => handleOpenEditModal(p)}
+                        className="btn btn-secondary btn-sm"
+                        style={{ padding: '4px 8px' }}
+                      >
+                        <Edit size={14} /> Edit
+                      </button>
+
+                      {p.active ? (
+                        <button
+                          onClick={() => handleDeactivate(p.id)}
+                          className="btn btn-danger btn-sm"
+                          style={{ padding: '4px 8px' }}
+                        >
+                          <Trash2 size={14} /> Deactivate
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleActivate(p.id)}
+                          className="btn btn-primary btn-sm"
+                          style={{ padding: '4px 8px', background: '#15803d' }}
+                        >
+                          Activate
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -217,64 +297,168 @@ const ProductManagement = () => {
       {isModalOpen && (
         <div className="modal-overlay">
           <div className="modal-content">
-            <div className="flex items-center justify-between" style={{ marginBottom: '1.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+            <div
+              className="flex items-center justify-between"
+              style={{
+                marginBottom: '1.5rem',
+                borderBottom: '1px solid #e2e8f0',
+                paddingBottom: '0.75rem',
+              }}
+            >
               <h3 style={{ fontSize: '1.3rem', fontWeight: '800' }}>
                 {editingProduct ? 'Edit Organic Product' : 'Add New Organic Product'}
               </h3>
-              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none' }}><X size={20} /></button>
+              <button onClick={() => setIsModalOpen(false)} style={{ background: 'none' }}>
+                <X size={20} />
+              </button>
             </div>
 
             <form onSubmit={handleSubmitProduct}>
               <div className="input-group">
                 <label className="input-label">Product Name *</label>
-                <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="input-field" required />
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="input-field"
+                  required
+                />
               </div>
 
               <div className="input-group">
                 <label className="input-label">Description</label>
-                <textarea rows="3" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="input-field" />
+                <textarea
+                  rows="3"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="input-field"
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="input-group">
                   <label className="input-label">Price (₹) *</label>
-                  <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({ ...formData, price: e.target.value })} className="input-field" required />
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    className="input-field"
+                    required
+                  />
                 </div>
                 <div className="input-group">
                   <label className="input-label">Stock Quantity *</label>
-                  <input type="number" value={formData.stockQuantity} onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value })} className="input-field" required />
+                  <input
+                    type="number"
+                    value={formData.stockQuantity}
+                    onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value })}
+                    className="input-field"
+                    required
+                  />
                 </div>
               </div>
 
               <div className="input-group">
                 <label className="input-label">Category</label>
-                <select value={formData.categoryId} onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })} className="input-field">
+                <select
+                  value={formData.categoryId}
+                  onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
+                  className="input-field"
+                >
                   <option value="">Select Category</option>
                   {categories.map((c) => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
                   ))}
                 </select>
               </div>
 
+              {/* Image Upload */}
               <div className="input-group">
-                <label className="input-label">Image URL</label>
-                <input type="text" value={formData.imageUrl} onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })} placeholder="https://..." className="input-field" />
+                <label className="input-label">Product Image</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    if (file.size > 2 * 1024 * 1024) {
+                      alert('Image should be less than 2MB');
+                      return;
+                    }
+
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      setFormData({ ...formData, imageUrl: reader.result });
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="input-field"
+                  style={{ padding: '8px' }}
+                />
+
+                {formData.imageUrl && (
+                  <div style={{ marginTop: '12px' }}>
+                    <img
+                      src={formData.imageUrl}
+                      alt="Preview"
+                      style={{
+                        width: '140px',
+                        height: '140px',
+                        objectFit: 'cover',
+                        borderRadius: '10px',
+                        border: '1px solid #e2e8f0',
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, imageUrl: '' })}
+                      style={{
+                        marginLeft: '12px',
+                        background: '#fee2e2',
+                        color: '#b91c1c',
+                        border: 'none',
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-6" style={{ margin: '1rem 0' }}>
                 <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
-                  <input type="checkbox" checked={formData.organic} onChange={(e) => setFormData({ ...formData, organic: e.target.checked })} />
+                  <input
+                    type="checkbox"
+                    checked={formData.organic}
+                    onChange={(e) => setFormData({ ...formData, organic: e.target.checked })}
+                  />
                   <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>100% Certified Organic</span>
                 </label>
                 <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
-                  <input type="checkbox" checked={formData.active} onChange={(e) => setFormData({ ...formData, active: e.target.checked })} />
+                  <input
+                    type="checkbox"
+                    checked={formData.active}
+                    onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                  />
                   <span style={{ fontWeight: '600', fontSize: '0.9rem' }}>Active Product</span>
                 </label>
               </div>
 
               <div className="flex justify-end gap-3" style={{ marginTop: '1.5rem' }}>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">Cancel</button>
-                <button type="submit" className="btn btn-primary">Save Product</button>
+                <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-secondary">
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Save Product
+                </button>
               </div>
             </form>
           </div>
@@ -290,7 +474,9 @@ const ProductManagement = () => {
             </h3>
             <form onSubmit={handlePatchSubmit}>
               <div className="input-group">
-                <label className="input-label">New {patchModal.type === 'stock' ? 'Stock Value' : 'Price (₹)'}</label>
+                <label className="input-label">
+                  New {patchModal.type === 'stock' ? 'Stock Value' : 'Price (₹)'}
+                </label>
                 <input
                   type="number"
                   step={patchModal.type === 'price' ? '0.01' : '1'}
@@ -301,8 +487,16 @@ const ProductManagement = () => {
                 />
               </div>
               <div className="flex justify-end gap-2">
-                <button type="button" onClick={() => setPatchModal({ open: false, type: '', productId: null, value: '' })} className="btn btn-secondary btn-sm">Cancel</button>
-                <button type="submit" className="btn btn-primary btn-sm">Update</button>
+                <button
+                  type="button"
+                  onClick={() => setPatchModal({ open: false, type: '', productId: null, value: '' })}
+                  className="btn btn-secondary btn-sm"
+                >
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary btn-sm">
+                  Update
+                </button>
               </div>
             </form>
           </div>

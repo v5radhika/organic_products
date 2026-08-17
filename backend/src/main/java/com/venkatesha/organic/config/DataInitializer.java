@@ -26,9 +26,9 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         if (userRepository.count() == 0) {
-            log.info("Initializing default users and products...");
+            log.info("Initializing default users, categories, and organic products...");
 
-            // 1. Create Default Owner
+            // 1. Default Owner Account
             User owner = User.builder()
                     .fullName("Venkatesha Owner")
                     .email("owner@venkatesha.com")
@@ -38,9 +38,8 @@ public class DataInitializer implements CommandLineRunner {
                     .address("108 Organic Way, Mysore, Karnataka, India")
                     .build();
             userRepository.save(owner);
-            log.info("Default OWNER created: owner@venkatesha.com");
 
-            // 2. Create Default Customer
+            // 2. Default Customer Account
             User customer = User.builder()
                     .fullName("Ramesh Kumar")
                     .email("customer@venkatesha.com")
@@ -50,9 +49,8 @@ public class DataInitializer implements CommandLineRunner {
                     .address("42 Green Valley Apt, Bangalore, India")
                     .build();
             userRepository.save(customer);
-            log.info("Default CUSTOMER created: customer@venkatesha.com");
 
-            // 3. Create Categories
+            // 3. Categories
             Category c1 = Category.builder()
                     .name("Organic Ghee & Oils")
                     .description("Traditional A2 Bilona Cow Ghee and cold-pressed unrefined organic oils.")
@@ -64,23 +62,27 @@ public class DataInitializer implements CommandLineRunner {
                     .imageUrl("https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80")
                     .build();
             Category c3 = Category.builder()
-                    .name("Organic Grains & Pulses")
-                    .description("Hand-picked unpolished pulses, heritage rice varieties, and whole grains.")
+                    .name("Heritage Rice & Grains")
+                    .description("Ancient Black rice, Red rice, Bamboo rice, and unpolished heritage grains.")
                     .imageUrl("https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=600&q=80")
                     .build();
             Category c4 = Category.builder()
-                    .name("Spices & Herbs")
-                    .description("Aromatic stone-ground spices and organic herbs rich in essential oils.")
+                    .name("Traditional Pickles")
+                    .description("Authentic homemade pickles made with cold-pressed mustard oil and natural sun-cured spices.")
                     .imageUrl("https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=600&q=80")
                     .build();
+            Category c5 = Category.builder()
+                    .name("Natural Spices & Honey")
+                    .description("High curcumin stone-ground spices and raw wild forest honey.")
+                    .imageUrl("https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=600&q=80")
+                    .build();
 
-            categoryRepository.saveAll(List.of(c1, c2, c3, c4));
-            log.info("Categories initialized");
+            categoryRepository.saveAll(List.of(c1, c2, c3, c4, c5));
 
-            // 4. Create Sample Organic Products
+            // 4. Sample Organic Products
             Product p1 = Product.builder()
                     .name("Pure A2 Desi Cow Bilona Ghee (500ml)")
-                    .description("Hand-churned traditional A2 Bilona Ghee from Gir cows. Pure, aromatic, and packed with health benefits.")
+                    .description("Hand-churned traditional A2 Bilona Ghee from Gir cows. Aromatic, medicinal, and 100% pure.")
                     .price(new BigDecimal("650.00"))
                     .stockQuantity(25)
                     .category(c1)
@@ -90,51 +92,95 @@ public class DataInitializer implements CommandLineRunner {
                     .build();
 
             Product p2 = Product.builder()
-                    .name("Cold Pressed Wood Pressed Groundnut Oil (1L)")
-                    .description("100% pure cold-pressed groundnut oil extracted using wooden Chekku. Rich in natural antioxidants.")
-                    .price(new BigDecimal("280.00"))
-                    .stockQuantity(4) // Low stock threshold test
-                    .category(c1)
-                    .imageUrl("https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80")
+                    .name("Ancient Black Rice - Karuppu Kavuni (1kg)")
+                    .description("Nutrient-rich ancient Black Rice packed with powerful anthocyanin antioxidants, iron, and fiber.")
+                    .price(new BigDecimal("220.00"))
+                    .stockQuantity(35)
+                    .category(c3)
+                    .imageUrl("https://images.unsplash.com/photo-1586201375761-83865001e31c?auto=format&fit=crop&w=800&q=80")
                     .organic(true)
                     .active(true)
                     .build();
 
             Product p3 = Product.builder()
-                    .name("Organic Wild Forest Honey (500g)")
-                    .description("Unprocessed raw forest honey collected sustainably from pristine mountain forests.")
-                    .price(new BigDecimal("420.00"))
-                    .stockQuantity(18)
-                    .category(c4)
-                    .imageUrl("https://images.unsplash.com/photo-1587049352847-4a222e784d38?auto=format&fit=crop&w=800&q=80")
-                    .organic(true)
-                    .active(true)
-                    .build();
-
-            Product p4 = Product.builder()
-                    .name("Heritage Organic Sona Masoori Rice (5kg)")
-                    .description("Single-origin unpolished Sona Masoori rice harvested naturally with zero chemicals.")
-                    .price(new BigDecimal("450.00"))
-                    .stockQuantity(30)
+                    .name("Organic Heritage Red Rice - Rajamudi (1kg)")
+                    .description("Traditional unpolished Red Rice with natural bran. Low glycemic index and rich in minerals.")
+                    .price(new BigDecimal("140.00"))
+                    .stockQuantity(40)
                     .category(c3)
                     .imageUrl("https://images.unsplash.com/photo-1536304929831-ee1ca9d44906?auto=format&fit=crop&w=800&q=80")
                     .organic(true)
                     .active(true)
                     .build();
 
+            Product p4 = Product.builder()
+                    .name("Authentic Avakaya Mango Pickle (500g)")
+                    .description("Traditional Andhra style raw mango pickle prepared with cold-pressed sesame oil and Guntur chilli.")
+                    .price(new BigDecimal("240.00"))
+                    .stockQuantity(20)
+                    .category(c4)
+                    .imageUrl("https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&w=800&q=80")
+                    .organic(true)
+                    .active(true)
+                    .build();
+
             Product p5 = Product.builder()
-                    .name("Stone Ground Turmeric Powder (250g)")
-                    .description("High curcumin content organic turmeric powder ground traditionally to preserve essential oils.")
-                    .price(new BigDecimal("120.00"))
-                    .stockQuantity(3) // Low stock
+                    .name("Spicy Country Garlic Pickle (250g)")
+                    .description("Homemade whole garlic clove pickle infused with stone-ground spices and organic mustard oil.")
+                    .price(new BigDecimal("180.00"))
+                    .stockQuantity(4) // Low stock threshold test
                     .category(c4)
                     .imageUrl("https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=800&q=80")
                     .organic(true)
                     .active(true)
                     .build();
 
-            productRepository.saveAll(List.of(p1, p2, p3, p4, p5));
-            log.info("Sample organic products initialized");
+            Product p6 = Product.builder()
+                    .name("Farm Fresh Organic Country Tomatoes (1kg)")
+                    .description("Sun-ripened native heirloom tomatoes freshly plucked from Venkatesha Organic Farms.")
+                    .price(new BigDecimal("45.00"))
+                    .stockQuantity(50)
+                    .category(c2)
+                    .imageUrl("https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80")
+                    .organic(true)
+                    .active(true)
+                    .build();
+
+            Product p7 = Product.builder()
+                    .name("Organic Native Spinach - Palak (250g)")
+                    .description("Fresh chemical-free leafy spinach harvested early morning for maximum crispness.")
+                    .price(new BigDecimal("30.00"))
+                    .stockQuantity(30)
+                    .category(c2)
+                    .imageUrl("https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=800&q=80")
+                    .organic(true)
+                    .active(true)
+                    .build();
+
+            Product p8 = Product.builder()
+                    .name("Cold Pressed Wood Pressed Groundnut Oil (1L)")
+                    .description("100% unrefined groundnut oil extracted in wooden Chekku. Rich in natural aroma and vitamin E.")
+                    .price(new BigDecimal("280.00"))
+                    .stockQuantity(15)
+                    .category(c1)
+                    .imageUrl("https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?auto=format&fit=crop&w=800&q=80")
+                    .organic(true)
+                    .active(true)
+                    .build();
+
+            Product p9 = Product.builder()
+                    .name("Organic Wild Forest Honey (500g)")
+                    .description("Unprocessed raw forest honey collected sustainably from wild hives in mountain forests.")
+                    .price(new BigDecimal("420.00"))
+                    .stockQuantity(18)
+                    .category(c5)
+                    .imageUrl("https://images.unsplash.com/photo-1587049352847-4a222e784d38?auto=format&fit=crop&w=800&q=80")
+                    .organic(true)
+                    .active(true)
+                    .build();
+
+            productRepository.saveAll(List.of(p1, p2, p3, p4, p5, p6, p7, p8, p9));
+            log.info("Rich organic products (Vegetables, Pickles, Black & Red Rice, Ghee) initialized");
         }
     }
 }

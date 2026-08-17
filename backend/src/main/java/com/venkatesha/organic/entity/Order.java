@@ -35,6 +35,12 @@ public class Order {
 
     private String contactPhone;
 
+    private String paymentMethod;
+
+    private String paymentStatus;
+
+    private String transactionId;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
